@@ -7,7 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1JN1omO3-XMK8ipnxrrWVl-zyWMS6X4hV
 
 #Finance: German-Credit for assessing credit risk
-The data cleaning code was written building on the following project by Janio Martinez Bachmann.
+The data cleaning code and conventional implementation was written building on the following project by Janio Martinez Bachmann.
 https://www.kaggle.com/janiobachmann/german-credit-analysis-a-risk-perspective
 However, I have reworked and adapted it to make it suitable for this project.
 
@@ -26,7 +26,7 @@ df = pd.read_csv('german_credit_data.csv')
 df = df.iloc[:, 1:]
 print(df.head())
 
-"""#Data Analysis
+"""#Task 2 : Data Analysis
 
 Fill the missing values. For checking account, fill with none. Then drop any rows with null values.
 """
@@ -56,11 +56,39 @@ g = sns.countplot(
     x=df['Sex']
 )
 
-"""Plotting a bar graph of age group and risk."""
+"""Plotting a bar graph of age group and risk (raw numbers).
 
-g = sns.barplot(
-    x=df['Age_Group'], y=df['Credit amount'], hue=df['Risk']
+
+
+"""
+
+g = sns.countplot(
+    x=df['Age_Group'], hue=df['Risk']
 )
+
+Risk vs Age Group (proportion)
+
+x, y, hue = "Age_Group", "proportion", "Risk"
+
+
+(df[x]
+ .groupby(df[hue])
+ .value_counts(normalize=True)
+ .rename(y)
+ .reset_index()
+ .pipe((sns.barplot, "data"), x=x, y=y, hue=hue))
+
+"""Risk vs Sex"""
+
+x, y, hue = "Risk", "proportion", "Sex"
+
+
+(df[x]
+ .groupby(df[hue])
+ .value_counts(normalize=True)
+ .rename(y)
+ .reset_index()
+ .pipe((sns.barplot, "data"), x=x, y=y, hue=hue))
 
 """For each sex, we can see the proportion of people applying for loans for each purpose. Females were more likely to apply for a credit loan to buy furniture and equipment then males, whereas males were much more likely to apply for loans to invest in business."""
 
@@ -74,3 +102,21 @@ hue_order = ["Male", "Female"]
  .reset_index()
  .pipe((sns.barplot, "data"), x=x, y=y, hue=hue))
 
+print(df.describe())
+
+df['Age_Group'].value_counts()[:3].index.tolist()
+
+"""# Task 3: Conventional Implementation
+
+Import relevant modules
+"""
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.model_selection import train_test_split, cross_val_score
+
+"""Split into X and y, test and training sets"""
+
+X=df[['Age_Group','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
+y=df[['Risk']]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
