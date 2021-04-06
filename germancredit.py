@@ -14,11 +14,11 @@ However, I have reworked and adapted it to make it suitable for this project.
 #Import Libraries
 """
 
-#importing the libraries
 import pandas as pd
 import numpy as np 
 import seaborn as sns 
 import matplotlib.pyplot as plt
+sns.set(rc={'figure.figsize':(11.7,8.27)})
 
 """#Load Dataset"""
 
@@ -26,4 +26,51 @@ df = pd.read_csv('german_credit_data.csv')
 df = df.iloc[:, 1:]
 print(df.head())
 
-"""#Data Analysis"""
+"""#Data Analysis
+
+Fill the missing values. For checking account, fill with none. Then drop any rows with null values.
+"""
+
+df['Checking account'] = df['Checking account'].fillna('None')
+df.dropna(inplace=True)
+
+"""Binning age into age groups. These are in 10 year groups between 30 and 70. Then there are also groups for those under 30 and those over 70."""
+
+for col in [df]:
+    col.loc[(col['Age'] > 18) & (col['Age'] <= 29), 'Age_Group'] = 'Under 30'
+    col.loc[(col['Age'] > 29) & (col['Age'] <= 40), 'Age_Group'] = '30-40'
+    col.loc[(col['Age'] > 40) & (col['Age'] <= 50), 'Age_Group'] = '40-50'
+    col.loc[(col['Age'] > 50)& (col['Age'] <= 60), 'Age_Group'] = '50-60'
+    col.loc[col['Age'] > 60, 'Age_Group'] = 'Over 60'
+df=df.sort_values(by=['Age'])
+
+"""Look at the number of people in each age group. We can see that there are more younger applicants than older ones. For females, the highest number of applicats were under 30, for males, they are aged between 30 and 40."""
+
+g = sns.countplot(
+    x=df['Age_Group'],hue=df['Sex']
+)
+
+"""The graph below shows the number of people of each sex in the dataset. We can see that there are double the amount of males than females."""
+
+g = sns.countplot(
+    x=df['Sex']
+)
+
+"""Plotting a bar graph of age group and risk."""
+
+g = sns.barplot(
+    x=df['Age_Group'], y=df['Credit amount'], hue=df['Risk']
+)
+
+"""For each sex, we can see the proportion of people applying for loans for each purpose. Females were more likely to apply for a credit loan to buy furniture and equipment then males, whereas males were much more likely to apply for loans to invest in business."""
+
+x, y, hue = "Purpose", "proportion", "Sex"
+hue_order = ["Male", "Female"]
+
+(df[x]
+ .groupby(df[hue])
+ .value_counts(normalize=True)
+ .rename(y)
+ .reset_index()
+ .pipe((sns.barplot, "data"), x=x, y=y, hue=hue))
+
