@@ -66,7 +66,7 @@ g = sns.countplot(
     x=df['Age_Group'], hue=df['Risk']
 )
 
-Risk vs Age Group (proportion)
+"""Risk vs Age Group (proportion)"""
 
 x, y, hue = "Age_Group", "proportion", "Risk"
 
@@ -108,15 +108,52 @@ df['Age_Group'].value_counts()[:3].index.tolist()
 
 """# Task 3: Conventional Implementation
 
-Import relevant modules
+Import relevant modules and perform one hot encoding for X.
 """
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline, FeatureUnion
-from sklearn.model_selection import train_test_split, cross_val_score
-
-"""Split into X and y, test and training sets"""
+from sklearn.preprocessing import OneHotEncoder
 
 X=df[['Age_Group','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
 y=df[['Risk']]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(X)
+X_enc=enc.transform(X).toarray()
+print(X_enc)
+
+"""Split into test and training sets"""
+
+X_train, X_test, y_train, y_test = train_test_split(X_enc, y, test_size=0.3, random_state=42)
+
+"""Look at the number of cases of good and bad risk in the original dataset. From this we can see that 67.2% of the applicants were categorised as being of good risk and 32.% of bad risk."""
+
+print(df["Risk"].value_counts())
+
+"""We need to ensure that there is a similar ratio of good to bad risk applicants in both the training and testing sets. In the training set, there is 66.9% good risk and 33.1% bad. In the test set, the percentages are 67.9% and 32.1% respectively. Therefore, we have similar ratios to the original data set."""
+
+print(y_train["Risk"].value_counts())
+print(y_test["Risk"].value_counts())
+
+"""Build the model"""
+
+from sklearn import svm
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score
+
+"""Implement gridsearchcv to see which are the optimum parameters"""
+
+params = {'C': [0.75, 0.85, 0.95, 1], 'kernel': ['linear', 'poly', 'rbf', 'sigmoid'], 'degree': [2,3, 4, 5]}
+
+svc_clf = svm.SVC(random_state=42)
+
+grid_search_cv = GridSearchCV(svc_clf, params)
+grid_search_cv.fit(X_train, y_train)
+
+print(grid_search_cv.best_params_)
+
+"""Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7439."""
+
+clf = svm.SVC(kernel='poly', C = 1.0, degree=2)
+clf.fit(X_train,y_train)
+y_pred = clf.predict(X_test)
+print(accuracy_score(y_test, y_pred))
