@@ -18,6 +18,7 @@ import pandas as pd
 import numpy as np 
 import seaborn as sns 
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, classification_report, confusion_matrix
 sns.set(rc={'figure.figsize':(11.7,8.27)})
 
 """#Load Dataset"""
@@ -112,17 +113,17 @@ Import relevant modules and perform one hot encoding for X. Split into test and 
 """
 
 from sklearn.preprocessing import OneHotEncoder
-
+from sklearn.model_selection import train_test_split
 X=df[['Age_Group','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
 y=df[['Risk']]
 
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train1, X_test1, y_train1, y_test1 = train_test_split(X, y, test_size=0.3, random_state=42)
 enc1 = OneHotEncoder(handle_unknown='ignore')
-enc1.fit(X_train)
-X_train_enc=enc1.transform(X_train).toarray()
+enc1.fit(X_train1)
+X_train_enc1=enc1.transform(X_train1).toarray()
 enc2 = OneHotEncoder(handle_unknown='ignore')
-enc2.fit(X_test)
-X_test_enc=enc1.transform(X_test).toarray()
+enc2.fit(X_test1)
+X_test_enc1=enc1.transform(X_test1).toarray()
 
 """Build the model"""
 
@@ -137,41 +138,47 @@ params = {'C': [0.75, 0.85, 0.95, 1], 'kernel': ['linear', 'poly', 'rbf', 'sigmo
 svc_clf = svm.SVC(random_state=42)
 
 grid_search_cv = GridSearchCV(svc_clf, params)
-grid_search_cv.fit(X_train, y_train)
+grid_search_cv.fit(X_train_enc1, y_train1)
 
 print(grid_search_cv.best_params_)
 
 """Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7439."""
 
 clf = svm.SVC(kernel='poly', C = 1.0, degree=2)
-clf.fit(X_train,y_train)
-y_pred = clf.predict(X_test)
-print(accuracy_score(y_test, y_pred))
+clf.fit(X_train_enc1,y_train1)
+y_pred1 = clf.predict(X_test_enc1)
+print(accuracy_score(y_test1, y_pred1))
+
+print(confusion_matrix(y_test1, y_pred1))
+print(classification_report(y_test1, y_pred1))
 
 """Unbiased splitting. The dataset is imbalanced in terms of age and gender. We use straified splitting to combat this."""
 
 X=df[['Age_Group','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
 y=df[['Risk']]
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=X[['Age_Group', 'Sex']])
+X_train2, X_test2, y_train2, y_test2 = train_test_split(X, y, test_size=0.3, random_state=42, stratify=X[['Age_Group', 'Sex']])
 enc1 = OneHotEncoder(handle_unknown='ignore')
-enc1.fit(X_train)
-X_train_enc=enc1.transform(X_train).toarray()
+enc1.fit(X_train2)
+X_train_enc2=enc1.transform(X_train2).toarray()
 enc2 = OneHotEncoder(handle_unknown='ignore')
-enc2.fit(X_test)
-X_test_enc=enc1.transform(X_test).toarray()
+enc2.fit(X_test2)
+X_test_enc2=enc1.transform(X_test2).toarray()
 
 params = {'C': [0.75, 0.85, 0.95, 1], 'kernel': ['linear', 'poly', 'rbf', 'sigmoid'], 'degree': [2,3, 4, 5]}
 
 svc_clf = svm.SVC(random_state=42)
 
 grid_search_cv = GridSearchCV(svc_clf, params)
-grid_search_cv.fit(X_train_enc, y_train)
+grid_search_cv.fit(X_train_enc2, y_train2)
 
 print(grid_search_cv.best_params_)
 
-"""Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.6789"""
+"""Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7276"""
 
-clf = svm.SVC(kernel='poly', C = 0.75, degree=2)
-clf.fit(X_train,y_train)
-y_pred = clf.predict(X_test)
-print(accuracy_score(y_test, y_pred))
+clf = svm.SVC(kernel='poly', C = 0.95, degree=4)
+clf.fit(X_train_enc2,y_train2)
+y_pred2 = clf.predict(X_test_enc2)
+print(accuracy_score(y_test2, y_pred2))
+
+print(confusion_matrix(y_test2, y_pred2))
+print(classification_report(y_test2, y_pred2))
