@@ -116,14 +116,10 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 X=df[['Age_Group','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
 y=df[['Risk']]
-
-X_train1, X_test1, y_train1, y_test1 = train_test_split(X, y, test_size=0.3, random_state=42)
-enc1 = OneHotEncoder(handle_unknown='ignore')
-enc1.fit(X_train1)
-X_train_enc1=enc1.transform(X_train1).toarray()
-enc2 = OneHotEncoder(handle_unknown='ignore')
-enc2.fit(X_test1)
-X_test_enc1=enc1.transform(X_test1).toarray()
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(X_train1)
+X_enc=enc1.transform(X).toarray()
+X_train1, X_test1, y_train1, y_test1 = train_test_split(X_enc, y, test_size=0.3, random_state=42)
 
 """Build the model"""
 
@@ -142,12 +138,12 @@ grid_search_cv.fit(X_train_enc1, y_train1)
 
 print(grid_search_cv.best_params_)
 
-"""Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7439."""
-
 clf = svm.SVC(kernel='poly', C = 1.0, degree=2)
 clf.fit(X_train_enc1,y_train1)
 y_pred1 = clf.predict(X_test_enc1)
 print(accuracy_score(y_test1, y_pred1))
+
+"""Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7439."""
 
 print(confusion_matrix(y_test1, y_pred1))
 print(classification_report(y_test1, y_pred1))
@@ -156,13 +152,11 @@ print(classification_report(y_test1, y_pred1))
 
 X=df[['Age_Group','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
 y=df[['Risk']]
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(X)
 X_train2, X_test2, y_train2, y_test2 = train_test_split(X, y, test_size=0.3, random_state=42, stratify=X[['Age_Group', 'Sex']])
-enc1 = OneHotEncoder(handle_unknown='ignore')
-enc1.fit(X_train2)
-X_train_enc2=enc1.transform(X_train2).toarray()
-enc2 = OneHotEncoder(handle_unknown='ignore')
-enc2.fit(X_test2)
-X_test_enc2=enc1.transform(X_test2).toarray()
+X_train_enc2=enc.transform(X_train2).toarray()
+X_test_enc2=enc.transform(X_test2).toarray()
 
 params = {'C': [0.75, 0.85, 0.95, 1], 'kernel': ['linear', 'poly', 'rbf', 'sigmoid'], 'degree': [2,3, 4, 5]}
 
@@ -182,3 +176,5 @@ print(accuracy_score(y_test2, y_pred2))
 
 print(confusion_matrix(y_test2, y_pred2))
 print(classification_report(y_test2, y_pred2))
+
+"""# Task 4 - fair machine learning implementation"""
