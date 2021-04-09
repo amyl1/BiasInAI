@@ -117,9 +117,10 @@ from sklearn.model_selection import train_test_split
 X=df[['Age_Group','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
 y=df[['Risk']]
 enc = OneHotEncoder(handle_unknown='ignore')
-enc.fit(X_train1)
-X_enc=enc1.transform(X).toarray()
-X_train1, X_test1, y_train1, y_test1 = train_test_split(X_enc, y, test_size=0.3, random_state=42)
+enc.fit(X)
+X_train1, X_test1, y_train1, y_test1 = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train_enc1=enc.transform(X_train1).toarray()
+X_test_enc1=enc.transform(X_test1).toarray()
 
 """Build the model"""
 
@@ -147,6 +148,21 @@ print(accuracy_score(y_test1, y_pred1))
 
 print(confusion_matrix(y_test1, y_pred1))
 print(classification_report(y_test1, y_pred1))
+
+print(X_test1)
+
+X_test1["Risk"]=y_pred1
+print(X_test1.head(30))
+
+x, y, hue = "Age_Group", "proportion", "Risk"
+
+
+(X_test2[x]
+ .groupby(X_test2[hue])
+ .value_counts(normalize=True)
+ .rename(y)
+ .reset_index()
+ .pipe((sns.barplot, "data"), x=x, y=y, hue=hue))
 
 """Unbiased splitting. The dataset is imbalanced in terms of age and gender. We use straified splitting to combat this."""
 
@@ -176,5 +192,18 @@ print(accuracy_score(y_test2, y_pred2))
 
 print(confusion_matrix(y_test2, y_pred2))
 print(classification_report(y_test2, y_pred2))
+
+X_test2["Risk"]=y_pred2
+print(X_test2.head(30))
+
+x, y, hue = "Age_Group", "proportion", "Risk"
+
+
+(X_test2[x]
+ .groupby(X_test2[hue])
+ .value_counts(normalize=True)
+ .rename(y)
+ .reset_index()
+ .pipe((sns.barplot, "data"), x=x, y=y, hue=hue))
 
 """# Task 4 - fair machine learning implementation"""
