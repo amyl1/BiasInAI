@@ -214,7 +214,7 @@ money_cat_order = pd.Categorical(['None', 'little','money' ,'quite rich' ,'rich'
 age_cat_order = pd.Categorical(['Under 30', '30-40','40-50' ,'50-60' ,'Over 60'], ordered=True)
 
 X_columns=df[['Job','Saving accounts','Checking account','Credit amount','Duration','Age_Group']]
-Y_columns=df[['Age','Sex']]
+Y_columns=df[['Age','Sex','Age_Group']]
 #sort all columns
 X_columns['Age_Group'].reindex(age_cat_order)
 X_columns['Saving accounts'].reindex(money_cat_order)
@@ -258,15 +258,13 @@ def repair(Y_columns,all_strat_comb, num_quantiles,sorted_lists,index_lookups,la
         #print("num_entries: "+str(number_entries))
         count=0
         for index,row in df.iterrows():
-          if row['Age']==group[0] and row['Sex']==group[1]:
+          if row['Age_Group']==group[0] and row['Sex']==group[1]:
             count+=1
             #if count>offset and count<group_offsets[group]:         
             entries_at_quantile.append([index])
             values.append(int(row['Age']))
         median_values_at_quantile.append(median(values))
       target_value=median(median_values_at_quantile)
-      #print("target: "+str(target_value))
-      #position_of_target=index_lookups[column][target_value]
       print(index_lookups[column])
       for entryID in entries_at_quantile:
          for index,row in df.iterrows():
@@ -279,8 +277,7 @@ import itertools as it
 sorted_lists={}
 index_lookups={}
 sorted_lists,index_lookups = unique_value_data(Y_columns)
-S_columns=df[['Age','Sex']]
-S={'Age':df['Age'].unique(), 'Sex':df['Sex'].unique()}
+S={'Age_Group':df['Age_Group'].unique(), 'Sex':df['Sex'].unique()}
 allCols = sorted(S)
 combinations = it.product(*(S[col] for col in allCols))
 combinations=list(combinations)
@@ -288,10 +285,10 @@ min_count=df.shape[0]
 comb_lengths={}
 for comb in combinations:
   count=0 
-  age=comb[0]
+  age_group=comb[0]
   sex=comb[1]
   for index, row in df.iterrows():
-    if row['Age']==age and row['Sex']==sex:
+    if row['Age_Group']==age_group and row['Sex']==sex:
       count+=1
   if count == 0:
     combinations.remove(comb)
