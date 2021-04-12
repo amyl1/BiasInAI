@@ -213,8 +213,8 @@ In order for reapair tool to work, columns must be orderable. We can keep column
 money_cat_order = pd.Categorical(['None', 'little','money' ,'quite rich' ,'rich'], ordered=True)
 age_cat_order = pd.Categorical(['Under 30', '30-40','40-50' ,'50-60' ,'Over 60'], ordered=True)
 
-X_columns=df[['Job','Saving accounts','Checking account','Credit amount','Duration','Age_Group','Sex']]
-Y_columns=df[['Risk']]
+X_columns=df[['Job','Saving accounts','Checking account','Credit amount','Duration','Age_Group']]
+Y_columns=df[['Age','Sex']]
 #sort all columns
 X_columns['Age_Group'].reindex(age_cat_order)
 X_columns['Saving accounts'].reindex(money_cat_order)
@@ -236,52 +236,69 @@ def unique_value_data(columns):
     index_lookups[col]=index_lookup
   return sorted_lists, index_lookups
 
+import math
 def median(lst):
-  return (sort(lst)[len(lst)/2])
+  return (lst[math.floor(len(lst)/2)])
 
 def repair(Y_columns,all_strat_comb, num_quantiles,sorted_lists,index_lookups,lamb):
   quantile_unit=1.0/num_quantiles
   for column in Y_columns:
     group_offsets={}
+    for comb in all_strat_comb:
+      group_offsets[comb]=1
     for quantile in range (0,num_quantiles):
       median_values_at_quantile = []
       entries_at_quantile = []
       #original pseudocode all_Strat_group
       for group in all_strat_comb:
-        offset=round((group_offsets.get(group)+quantile_unit)*group.size())-group_offsets
-        #select statement
-        entries_at_quantile.append(entryIDs)
+        values=[]
+        offset=round(group_offsets[group]*all_strat_comb[group])
+        #print("offfset"+ str(offset))
+        number_entries=round(group_offsets[group]+quantile_unit)-offset
+        #print("num_entries: "+str(number_entries))
+        count=0
+        for index,row in df.iterrows():
+          if row['Age']==group[0] and row['Sex']==group[1]:
+            count+=1
+            #if count>offset and count<group_offsets[group]:         
+            entries_at_quantile.append([index])
+            values.append(int(row['Age']))
         median_values_at_quantile.append(median(values))
       target_value=median(median_values_at_quantile)
-      position_of_target=index_lookups.get(column).get(target_value)
+      #print("target: "+str(target_value))
+      #position_of_target=index_lookups[column][target_value]
+      print(index_lookups[column])
       for entryID in entries_at_quantile:
-        #select statement
-        repair_value=(1-lamb)*value + lamb*target_value
-      #update statement
+         for index,row in df.iterrows():
+          if index==entryID:
+            value=row['Age']
+            repair_value=(1-lamb)*value + lamb*target_value
+            d1['index']['Age'] = repair_value
 
 import itertools as it
 sorted_lists={}
 index_lookups={}
-sorted_lists,index_lookups = unique_value_data(X_columns)
-S_columns=df[['Age_Group','Sex']]
-S={'Age_Group':df['Age_Group'].unique(), 'Sex':df['Sex'].unique()}
+sorted_lists,index_lookups = unique_value_data(Y_columns)
+S_columns=df[['Age','Sex']]
+S={'Age':df['Age'].unique(), 'Sex':df['Sex'].unique()}
 allCols = sorted(S)
 combinations = it.product(*(S[col] for col in allCols))
 combinations=list(combinations)
 min_count=df.shape[0]
+comb_lengths={}
 for comb in combinations:
   count=0 
   age=comb[0]
   sex=comb[1]
   for index, row in df.iterrows():
-    if row['Age_Group']==age and row['Sex']==sex:
+    if row['Age']==age and row['Sex']==sex:
       count+=1
   if count == 0:
     combinations.remove(comb)
   else:
+    comb_lengths[comb]=count
     if count<min_count:
       min_count=count
-D1=df
-#repair(Y_columns,combinations, min_count, sorted_lists, index_lookups, 0.5)
-
-print(X_columns['Saving accounts'].values)
+d1=df
+repair(Y_columns,comb_lengths, min_count, sorted_lists, index_lookups, 0.9)
+print(d1.head())
