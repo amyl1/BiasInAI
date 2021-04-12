@@ -259,19 +259,29 @@ def repair(Y_columns,all_strat_comb, num_quantiles,sorted_lists,index_lookups,la
         repair_value=(1-lamb)*value + lamb*target_value
       #update statement
 
-import itertools
+import itertools as it
 sorted_lists={}
 index_lookups={}
 sorted_lists,index_lookups = unique_value_data(X_columns)
-"""
-all_strat_comb=itertools.product(column in S)
-
-for comb in all_strat_comb:
-  if len(comb)==0:
-    all_strat_comb.remove(comb)
-number_of_quantiles=min(combination.size() for comb in all_strat_comb)
-D1=clone(D)
-repair(Y_columns,all_strat_comb, number_of_quantiles, sorted_lists, index_lookups, 0.5)
-"""
+S_columns=df[['Age_Group','Sex']]
+S={'Age_Group':df['Age_Group'].unique(), 'Sex':df['Sex'].unique()}
+allCols = sorted(S)
+combinations = it.product(*(S[col] for col in allCols))
+combinations=list(combinations)
+min_count=df.shape[0]
+for comb in combinations:
+  count=0 
+  age=comb[0]
+  sex=comb[1]
+  for index, row in df.iterrows():
+    if row['Age_Group']==age and row['Sex']==sex:
+      count+=1
+  if count == 0:
+    combinations.remove(comb)
+  else:
+    if count<min_count:
+      min_count=count
+D1=df
+#repair(Y_columns,combinations, min_count, sorted_lists, index_lookups, 0.5)
 
 print(X_columns['Saving accounts'].values)
