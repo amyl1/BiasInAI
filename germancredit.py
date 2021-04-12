@@ -207,30 +207,19 @@ x, y, hue = "Age_Group", "proportion", "Risk"
 
 """# Task 4 - fair machine learning implementation
 
-Fairness through unawareness.
+In order for reapair tool to work, columns must be orderable. We can keep columns with numeric and orderable categorical data. Therefore housing and purpose must be dropped.
 """
 
-X=df[['Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
-y=df[['Risk']]
-enc = OneHotEncoder(handle_unknown='ignore')
-enc.fit(X)
-X_train3, X_test3, y_train3, y_test3 = train_test_split(X, y, test_size=0.3, random_state=42)
-X_train_enc3=enc.transform(X_train3).toarray()
-X_test_enc3=enc.transform(X_test3).toarray()
+money_cat_order = pd.Categorical(['None', 'little','money' ,'quite rich' ,'rich'], ordered=True)
+age_cat_order = pd.Categorical(['Under 30', '30-40','40-50' ,'50-60' ,'Over 60'], ordered=True)
 
-params = {'C': [0.75, 0.85, 0.95, 1], 'kernel': ['linear', 'poly', 'rbf', 'sigmoid'], 'degree': [2,3, 4, 5]}
-
-svc_clf = svm.SVC(random_state=42)
-
-grid_search_cv = GridSearchCV(svc_clf, params)
-grid_search_cv.fit(X_train_enc2, y_train2)
-
-print(grid_search_cv.best_params_)
-
-clf = svm.SVC(kernel='poly', C = 1, degree=4)
-clf.fit(X_train_enc2,y_train2)
-y_pred2 = clf.predict(X_test_enc2)
-print(accuracy_score(y_test2, y_pred2))
+X_columns=df[['Job','Saving accounts','Checking account','Credit amount','Duration','Age_Group','Sex']]
+Y_columns=df[['Risk']]
+#sort all columns
+X_columns['Age_Group'].reindex(age_cat_order)
+X_columns['Saving accounts'].reindex(money_cat_order)
+X_columns['Checking account'].reindex(money_cat_order)
+print(X_columns.head())
 
 """Repair Tool"""
 
@@ -238,12 +227,13 @@ def unique_value_data(columns):
   sorted_list={}
   index_lookups={}
   for col in columns:
-    sorted_list=sort(unique_cols)
+    index_lookup={}
+    sorted_list=df[col].unique()
+    sorted_list.sort()
     sorted_lists[col]=sorted_list
-    index_lookup[value]=sorted_list.index(value)
     for value in sorted_list:
-      index_lookup[value]=index
-    index_lookups[column]=index_lookup
+      index_lookup[value]=np.where(sorted_list == value)[0][0]
+    index_lookups[col]=index_lookup
   return sorted_lists, index_lookups
 
 def median(lst):
@@ -258,23 +248,30 @@ def repair(Y_columns,all_strat_comb, num_quantiles,sorted_lists,index_lookups,la
       entries_at_quantile = []
       #original pseudocode all_Strat_group
       for group in all_strat_comb:
-        offset=round(group_offsets.get(group)+quantile_unit)*group.size())-group_offsets
+        offset=round((group_offsets.get(group)+quantile_unit)*group.size())-group_offsets
         #select statement
         entries_at_quantile.append(entryIDs)
         median_values_at_quantile.append(median(values))
       target_value=median(median_values_at_quantile)
       position_of_target=index_lookups.get(column).get(target_value)
-      for each entryID in entries_at_quantile:
+      for entryID in entries_at_quantile:
         #select statement
         repair_value=(1-lamb)*value + lamb*target_value
       #update statement
 
 import itertools
-sorted_lists,index_lookups = unique_value_data(X-columns, Y_columns)
+sorted_lists={}
+index_lookups={}
+sorted_lists,index_lookups = unique_value_data(X_columns)
+"""
 all_strat_comb=itertools.product(column in S)
+
 for comb in all_strat_comb:
   if len(comb)==0:
     all_strat_comb.remove(comb)
 number_of_quantiles=min(combination.size() for comb in all_strat_comb)
 D1=clone(D)
 repair(Y_columns,all_strat_comb, number_of_quantiles, sorted_lists, index_lookups, 0.5)
+"""
+
+print(X_columns['Saving accounts'].values)
