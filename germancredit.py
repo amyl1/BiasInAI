@@ -146,10 +146,7 @@ print(accuracy_score(y_test1, y_pred1))
 
 """Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7439."""
 
-print(confusion_matrix(y_test1, y_pred1))
 print(classification_report(y_test1, y_pred1))
-
-print(X_test1)
 
 X_test1["Risk"]=y_pred1
 print(X_test1.head(30))
@@ -213,7 +210,7 @@ In order for reapair tool to work, columns must be orderable. We can keep column
 money_cat_order = pd.Categorical(['None', 'little','money' ,'quite rich' ,'rich'], ordered=True)
 age_cat_order = pd.Categorical(['Under 30', '30-40','40-50' ,'50-60' ,'Over 60'], ordered=True)
 
-X_columns=df[['Job','Saving accounts','Checking account','Credit amount','Duration','Age_Group']]
+X_columns=df[['Job','Saving accounts','Checking account','Credit amount','Duration']]
 Y_columns=df[['Age','Sex','Age_Group']]
 #sort all columns
 X_columns['Age_Group'].reindex(age_cat_order)
@@ -265,7 +262,6 @@ def repair(Y_columns,all_strat_comb, num_quantiles,sorted_lists,index_lookups,la
             values.append(int(row['Age']))
         median_values_at_quantile.append(median(values))
       target_value=median(median_values_at_quantile)
-      print(index_lookups[column])
       for entryID in entries_at_quantile:
          for index,row in df.iterrows():
           if index==entryID:
@@ -299,3 +295,44 @@ for comb in combinations:
 d1=df
 repair(Y_columns,comb_lengths, min_count, sorted_lists, index_lookups, 0.9)
 print(d1.head())
+
+#change back to age group?
+X=d1[['Age','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
+y=d1[['Risk']]
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(X)
+X_train3, X_test3, y_train3, y_test3 = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train_enc3=enc.transform(X_train3).toarray()
+X_test_enc3=enc.transform(X_test3).toarray()
+
+params = {'C': [0.75, 0.85, 0.95, 1], 'kernel': ['linear', 'poly', 'rbf', 'sigmoid'], 'degree': [2,3, 4, 5]}
+
+svc_clf = svm.SVC(random_state=42)
+
+grid_search_cv = GridSearchCV(svc_clf, params)
+grid_search_cv.fit(X_train_enc3, y_train3)
+
+print(grid_search_cv.best_params_)
+
+clf = svm.SVC(kernel='poly', C = 0.85, degree=2)
+clf.fit(X_train_enc3,y_train3)
+y_pred3 = clf.predict(X_test_enc3)
+print(accuracy_score(y_test3, y_pred3))
+
+print(classification_report(y_test3, y_pred3))
+
+X_test3["Risk"]=y_pred3
+
+bins = [0, 30, 40, 50, 60, 120]
+labels = ['Under 30', '30-40','40-50' ,'50-60' ,'Over 60']
+X_test3['Age_Group'] = pd.cut(X_test3['Age'], bins, labels = labels,include_lowest = True)
+
+x, y, hue = "Age_Group", "proportion", "Risk"
+
+
+(X_test3[x]
+ .groupby(X_test3[hue])
+ .value_counts(normalize=True)
+ .rename(y)
+ .reset_index()
+ .pipe((sns.barplot, "data"), x=x, y=y, hue=hue))
