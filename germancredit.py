@@ -51,6 +51,10 @@ g = sns.countplot(
     x=df['Age_Group'],hue=df['Sex']
 )
 
+print("Bad risk obver 60: "+str(sum((df['Age_Group']=='Over 60') & (df['Risk']=='bad'))))
+print("Number good risk: "+str(sum(df['Risk']=='good')))
+print("Number bad risk: "+str(sum(df['Risk']=='bad')))
+
 """The graph below shows the number of people of each sex in the dataset. We can see that there are double the amount of males than females."""
 
 g = sns.countplot(
@@ -107,6 +111,26 @@ print(df.describe())
 
 df['Age_Group'].value_counts()[:3].index.tolist()
 
+"""Function to calculate the number of true positives, false positivies, true negatives and false negatives. """
+
+def positive_negative_measure(y_actual, y_pred):
+    y_act=y_actual.to_numpy()
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+    for i in range(len(y_pred)): 
+        if y_act[i]==y_pred[i]=='good':
+           TP += 1
+        elif y_pred[i]=='good' and y_act[i]!=y_pred[i]:
+           FP += 1
+        elif y_act[i]==y_pred[i]=='bad':
+           TN += 1
+        elif y_pred[i]=='bad' and y_act[i]!=y_pred[i]:
+           FN += 1
+
+    return(TP, FP, TN, FN)
+
 """# Task 3: Conventional Implementation
 
 Import relevant modules and perform one hot encoding for X. Split into test and training sets (naively).
@@ -139,17 +163,32 @@ grid_search_cv.fit(X_train_enc1, y_train1)
 
 print(grid_search_cv.best_params_)
 
+predMap={
+    "good":1,
+    "bad":0
+}
+
 clf = svm.SVC(kernel='poly', C = 1.0, degree=2)
 clf.fit(X_train_enc1,y_train1)
 y_pred1 = clf.predict(X_test_enc1)
 print(accuracy_score(y_test1, y_pred1))
+
+TP, FP, TN, FN = positive_negative_measure(y_test1, y_pred1)
+BER = 0.5*(FP/(TN+FP)+FN/(FN+TP))
+print("Utility: "+str(1-BER))
+
+conditions1 = [y_pred1 == 'good', y_pred1 == 'bad']
+conditions2 = [y_test1 == 'good',y_test1 == 'bad']
+choices = [1, 0]
+y_pred1_enc = np.select(conditions1, choices)
+y_test1_enc = np.select(conditions2, choices)
+mean_absolute_error(y_test1_enc, y_pred1_enc)
 
 """Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7439."""
 
 print(classification_report(y_test1, y_pred1))
 
 X_test1["Risk"]=y_pred1
-print(X_test1.head(30))
 
 x, y, hue = "Age_Group", "proportion", "Risk"
 
@@ -171,6 +210,9 @@ X_train2, X_test2, y_train2, y_test2 = train_test_split(X, y, test_size=0.3, ran
 X_train_enc2=enc.transform(X_train2).toarray()
 X_test_enc2=enc.transform(X_test2).toarray()
 
+print(sum((X_train2['Age_Group']=='Over 60') & (y_train2['Risk']=='bad')))
+print(sum((X_train2['Age_Group']=='Over 60') & (y_train2['Risk']=='good')))
+
 params = {'C': [0.75, 0.85, 0.95, 1], 'kernel': ['linear', 'poly', 'rbf', 'sigmoid'], 'degree': [2,3, 4, 5]}
 
 svc_clf = svm.SVC(random_state=42)
@@ -186,6 +228,18 @@ clf = svm.SVC(kernel='poly', C = 1, degree=4)
 clf.fit(X_train_enc2,y_train2)
 y_pred2 = clf.predict(X_test_enc2)
 print(accuracy_score(y_test2, y_pred2))
+TP, FP, TN, FN = positive_negative_measure(y_test2, y_pred2)
+BER = 0.5*(FP/(TN+FP)+FN/(FN+TP))
+print("Utility: "+str(1-BER))
+
+conditions1 = [y_pred2 == 'good', y_pred2 == 'bad']
+conditions2 = [y_test2 == 'good',y_test2 == 'bad']
+choices = [1, 0]
+
+y_pred2_enc = np.select(conditions1, choices)
+y_test2_enc = np.select(conditions2, choices)
+
+mean_absolute_error(y_pred2_enc,y_test2_enc)
 
 print(confusion_matrix(y_test2, y_pred2))
 print(classification_report(y_test2, y_pred2))
@@ -213,7 +267,7 @@ age_cat_order = pd.Categorical(['Under 30', '30-40','40-50' ,'50-60' ,'Over 60']
 X_columns=df[['Job','Saving accounts','Checking account','Credit amount','Duration']]
 Y_columns=df[['Age','Sex','Age_Group']]
 #sort all columns
-X_columns['Age_Group'].reindex(age_cat_order)
+Y_columns['Age_Group'].reindex(age_cat_order)
 X_columns['Saving accounts'].reindex(money_cat_order)
 X_columns['Checking account'].reindex(money_cat_order)
 print(X_columns.head())
@@ -240,19 +294,12 @@ def median(lst):
 def repair(Y_columns,all_strat_comb, num_quantiles,sorted_lists,index_lookups,lamb):
   quantile_unit=1.0/num_quantiles
   for column in Y_columns:
-    group_offsets={}
-    for comb in all_strat_comb:
-      group_offsets[comb]=1
     for quantile in range (0,num_quantiles):
       median_values_at_quantile = []
       entries_at_quantile = []
       #original pseudocode all_Strat_group
       for group in all_strat_comb:
         values=[]
-        offset=round(group_offsets[group]*all_strat_comb[group])
-        #print("offfset"+ str(offset))
-        number_entries=round(group_offsets[group]+quantile_unit)-offset
-        #print("num_entries: "+str(number_entries))
         count=0
         for index,row in df.iterrows():
           if row['Age_Group']==group[0] and row['Sex']==group[1]:
@@ -294,7 +341,6 @@ for comb in combinations:
       min_count=count
 d1=df
 repair(Y_columns,comb_lengths, min_count, sorted_lists, index_lookups, 0.9)
-print(d1.head())
 
 #change back to age group?
 X=d1[['Age','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
@@ -318,6 +364,19 @@ clf = svm.SVC(kernel='poly', C = 0.85, degree=2)
 clf.fit(X_train_enc3,y_train3)
 y_pred3 = clf.predict(X_test_enc3)
 print(accuracy_score(y_test3, y_pred3))
+
+TP, FP, TN, FN = positive_negative_measure(y_test3, y_pred3)
+BER = 0.5*(FP/(TN+FP)+FN/(FN+TP))
+print("Utility: "+str(1-BER))
+
+conditions1 = [y_pred3 == 'good', y_pred3 == 'bad']
+conditions2 = [y_test3 == 'good',y_test3 == 'bad']
+choices = [1, 0]
+
+y_pred3_enc = np.select(conditions1, choices)
+y_test3_enc = np.select(conditions2, choices)
+
+mean_absolute_error(y_test3_enc, y_pred3_enc)
 
 print(classification_report(y_test3, y_pred3))
 
