@@ -222,7 +222,7 @@ grid_search_cv.fit(X_train_enc2, y_train2)
 
 print(grid_search_cv.best_params_)
 
-"""Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7276"""
+"""Use the parameters found in the previous step to produce a model and check the accuracy. With these parameters we get an accuracy score of 0.7317"""
 
 clf = svm.SVC(kernel='poly', C = 1, degree=4)
 clf.fit(X_train_enc2,y_train2)
@@ -342,7 +342,6 @@ for comb in combinations:
 d1=df
 repair(Y_columns,comb_lengths, min_count, sorted_lists, index_lookups, 0.9)
 
-#change back to age group?
 X=d1[['Age','Sex','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose']]
 y=d1[['Risk']]
 enc = OneHotEncoder(handle_unknown='ignore')
